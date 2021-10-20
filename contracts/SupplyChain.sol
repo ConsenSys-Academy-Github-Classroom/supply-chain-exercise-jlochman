@@ -13,7 +13,7 @@ contract SupplyChain {
   mapping (uint => Item) private items;
 
   // <enum State: ForSale, Sold, Shipped, Received>
-  enum State { ForSale, Sold, Shipped, Received }
+  enum State { ForSale , Sold, Shipped, Received }
 
   // <struct Item: name, sku, price, state, seller, and buyer>
   struct Item {
@@ -92,7 +92,7 @@ contract SupplyChain {
     _;
   }
 
-  constructor() {
+  constructor() public {
     // 1. Set the owner to the transaction sender
     owner = msg.sender;
     // 2. Initialize the sku count to 0. Question, is this necessary?
@@ -106,8 +106,8 @@ contract SupplyChain {
       sku: skuCount,
       price: _price,
       state: State.ForSale,
-      seller: payable(msg.sender),
-      buyer: payable(0)
+      seller: address(uint160(msg.sender)),
+      buyer: address(uint160(0))
     });
     // 2. Increment the skuCount by one
     skuCount++;
@@ -120,9 +120,9 @@ contract SupplyChain {
     // 1. it should be payable in order to receive refunds
   function buyItem(uint sku) public payable forSale(sku) paidEnough(items[sku].price) {
     // 2. this should transfer money to the seller, 
-    payable(items[sku].seller).transfer(items[sku].price);
+    items[sku].seller.transfer(items[sku].price);
     // 3. set the buyer as the person who called this transaction, 
-    items[sku].buyer = payable(msg.sender);
+    items[sku].buyer = address(uint160(msg.sender));
     // 4. set the state to Sold. 
     items[sku].state = State.Sold;
     // 5. this function should use 3 modifiers to check 
@@ -130,7 +130,7 @@ contract SupplyChain {
     //    - if the buyer paid enough, 
     //    - check the value after the function is called to make 
     //      sure the buyer is refunded any excess ether sent. 
-    payable(msg.sender).transfer(msg.value - items[sku].price);
+    items[sku].buyer.transfer(msg.value - items[sku].price);
     
     // 6. call the event associated with this function!
     emit LogSold(sku);
